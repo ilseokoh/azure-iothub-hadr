@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"path": "hub-monitor"
+		},
+		{
+			"path": "simulated-device"
+		}
+	],
+	"settings": {}
+}
