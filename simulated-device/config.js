@@ -5,7 +5,7 @@ var fs = require('fs');
 class ConnectoinConfig { 
     constructor(registerid) { 
         let dir = `./device-config`;
-        this._filename = `${dir}/${registerid}.json`;
+        this._filename = `${dir}/${registerid}`;
 
         if (!fs.existsSync(dir)) { 
             fs.mkdirSync(dir)

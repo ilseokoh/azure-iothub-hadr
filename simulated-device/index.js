@@ -121,21 +121,39 @@ var connectCallback = function (err) {
   }
 }
 
+function twinCallback(err, twin) { 
+  if (err) { 
+    console.error('could not get twin');
+  } else { 
+    console.log('twin created'); 
+    var reportedProperties = { 
+      "hubHostName": hubHostname
+    }
+    
+    twin.properties.reported.update(reportedProperties, function(error) {
+      if (error) { console.error('twin reported error')}
+      console.log('twin reported.')
+    });
+  }
+}
+
+function deviceStart() {
+  hubHostname = getHubHostname(connectionString);
+
+  hubClient = Client.fromConnectionString(connectionString, Protocol);
+  hubClient.open(connectCallback);
+
+  hubClient.getTwin(twinCallback);
+}
+
 // Read connection string from file first. 
 connectionStringInfo.read().then((data) => {
   console.log(`read connection string successfully.`);
   connectionString = data;
-
-  hubHostname = getHubHostname(connectionString);
-
-  hubClient = Client.fromConnectionString(connectionString, Protocol);
-  hubClient.open(connectCallback);
+  deviceStart();
+  
 }, (err) => {
   console.log(`can't find connection string. start provisioning`);
   registerDevice();
-
-  hubHostname = getHubHostname(connectionString);
-
-  hubClient = Client.fromConnectionString(connectionString, Protocol);
-  hubClient.open(connectCallback);
+  deviceStart();
 });
