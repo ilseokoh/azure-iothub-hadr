@@ -3,9 +3,11 @@
 var Protocol = require('azure-iot-device-mqtt').Mqtt;
 var Client = require('azure-iot-device').Client;
 var Message = require('azure-iot-device').Message;
+var axios = require('axios');
 
 var DeviceProvision = require('./provision');
-var ConnectionConfig = require('./config');
+var ConnectionStringFileManager = require('./config-manager');
+var config = require('./config.json');
 
 // Parse args
 var argv = require('yargs')
@@ -26,7 +28,7 @@ var argv = require('yargs')
 
 var registrationId = argv.registrationid;
 var symmetricKey = argv.symmetrickey;
-var idScope = '0ne00045D0E';
+var idScope = config.idScope; //'0ne00045D0E';
 var connectionString = '';
 var cnt = 0;
 var hubClient = null;
@@ -37,7 +39,7 @@ var sendHeartbeatInterval = null;
 const provision = new DeviceProvision(registrationId, symmetricKey, idScope);
 
 // IoT Hub Connection String File save 
-const connectionStringInfo = new ConnectionConfig(registrationId);
+const connectionStringInfo = new ConnectionStringFileManager(registrationId);
 
 // register device to DPS
 function registerDevice() {
@@ -60,6 +62,9 @@ function registerDevice() {
 }
 
 function onReprovision(request, response) {
+  // delete config file first 
+  connectionStringInfo.delete();
+  
   // Reprovision
   registerDevice();
 
@@ -82,6 +87,29 @@ function getHubHostname(connstr) {
   return name;
 }
 
+function getIoTHubStatus() { 
+  axios.get(config.checkIoTHealthUrl)
+  .then(response => {
+    var healthy = response.data.healthy;
+    var provision = response.data.provision;
+
+    console.log(`healthy: ${healthy}`);
+    console.log(`provision: ${provision}`);
+
+    if (healthy == false || provision == true) { 
+
+      // delete config file first 
+      connectionStringInfo.delete();
+
+      // time to reprovision
+      registerDevice();
+    }
+  })
+  .catch(error => {
+    console.log(error);
+  });
+}
+
 var connectCallback = function (err) {
   if (err) {
     console.error(`Could not connect ${err.message}`);
@@ -96,7 +124,7 @@ var connectCallback = function (err) {
       clientInformation.removeAllListener();
 
       // call backup channel to get current situation. 
-
+      getIoTHubStatus();
       
     });
 
