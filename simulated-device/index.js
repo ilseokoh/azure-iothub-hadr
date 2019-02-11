@@ -4,6 +4,7 @@ var Protocol = require('azure-iot-device-mqtt').Mqtt;
 var Client = require('azure-iot-device').Client;
 var Message = require('azure-iot-device').Message;
 var axios = require('axios');
+var NoRetry = require('azure-iot-common').NoRetry;
 
 var DeviceProvision = require('./provision');
 var ConnectionStringFileManager = require('./config-manager');
@@ -11,35 +12,28 @@ var config = require('./config.json');
 
 // Parse args
 var argv = require('yargs')
-  .usage('Usage: $0 --registrationid <DEVICE ID> --symmetrickey <GROUP SYMMETRIC KEY> ')
+  .usage('Usage: $0 --registrationid <DEVICE ID>')
   .option('registrationid', {
     alias: 'id',
     describe: 'provisioning registration id',
     type: 'string',
     demandOption: true
   })
-  .option('symmetrickey', {
-    alias: 'k',
-    describe: 'provisioning symmetric key',
-    type: 'string',
-    demandOption: true
-  })
   .argv;
 
 var registrationId = argv.registrationid;
-var symmetricKey = argv.symmetrickey;
-var idScope = config.idScope; //'0ne00045D0E';
+var idScope = config.idScope; 
 var connectionString = '';
 var cnt = 0;
 var hubClient = null;
 var hubHostname = '';
 var sendHeartbeatInterval = null;
 
-// Device Provision
-const provision = new DeviceProvision(registrationId, symmetricKey, idScope);
+// Device Provision 1st
+var provision = new DeviceProvision(registrationId, config.mainIoTHub, idScope);
 
 // IoT Hub Connection String File save 
-const connectionStringInfo = new ConnectionStringFileManager(registrationId);
+var connectionStringInfo = new ConnectionStringFileManager(registrationId);
 
 // register device to DPS
 function registerDevice() {
@@ -49,6 +43,9 @@ function registerDevice() {
   registerPromise.then((result) => {
     console.log(`connectionString: ${result}`);
     connectionString = result;
+
+  deviceStart();
+
 
     // save connection string to file 
     connectionStringInfo.save(result).then((saveresult) => {
@@ -65,6 +62,9 @@ function onReprovision(request, response) {
   // delete config file first 
   connectionStringInfo.delete();
   
+  // Device Provision 2nd
+  provision = new DeviceProvision(registrationId, config.secondaryIoTHub, idScope);
+
   // Reprovision
   registerDevice();
 
@@ -91,18 +91,22 @@ function getIoTHubStatus() {
   axios.get(config.checkIoTHealthUrl)
   .then(response => {
     var healthy = response.data.healthy;
-    var provision = response.data.provision;
+    var reprovision = response.data.reprovision;
 
     console.log(`healthy: ${healthy}`);
     console.log(`provision: ${provision}`);
 
-    if (healthy == false || provision == true) { 
+    if (healthy == false || reprovision == true) { 
 
       // delete config file first 
       connectionStringInfo.delete();
 
       // time to reprovision
+      // Device Provision 2nd
+      provision = new DeviceProvision(registrationId, config.secondaryIoTHub, idScope);
       registerDevice();
+      // start device again
+      deviceStart();
     }
   })
   .catch(error => {
@@ -121,7 +125,6 @@ var connectCallback = function (err) {
       console.log('client on disconnect called.');
 
       clearInterval(sendHeartbeatInterval);
-      clientInformation.removeAllListener();
 
       // call backup channel to get current situation. 
       getIoTHubStatus();
@@ -169,6 +172,7 @@ function deviceStart() {
   hubHostname = getHubHostname(connectionString);
 
   hubClient = Client.fromConnectionString(connectionString, Protocol);
+  hubClient.setRetryPolicy(new NoRetry());
   hubClient.open(connectCallback);
 
   hubClient.getTwin(twinCallback);
@@ -183,5 +187,4 @@ connectionStringInfo.read().then((data) => {
 }, (err) => {
   console.log(`can't find connection string. start provisioning`);
   registerDevice();
-  deviceStart();
 });
