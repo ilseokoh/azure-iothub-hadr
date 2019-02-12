@@ -2,10 +2,10 @@
 
 var fs = require('fs');
 
-class ConnectoinConfig { 
+class ConnectionStringFileManager { 
     constructor(registerid) { 
         let dir = `./device-config`;
-        this._filename = `${dir}/${registerid}.json`;
+        this._filename = `${dir}/${registerid}`;
 
         if (!fs.existsSync(dir)) { 
             fs.mkdirSync(dir)
@@ -37,6 +37,12 @@ class ConnectoinConfig {
             });
         });
     }
+
+    delete() {
+        return new Promise((resolve, reject) => { 
+            fs.unlinkSync(this._filename);
+        })
+    }
 }
 
-module.exports = ConnectoinConfig;
+module.exports = ConnectionStringFileManager;

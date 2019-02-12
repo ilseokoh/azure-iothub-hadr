@@ -1,0 +1,6 @@
+{
+    "idScope": "0ne0004667D",
+    "checkIoTHealthUrl": "https://krsouthsvc.azurewebsites.net/api/check",
+    "mainIoTHub": "udWV9AWsBQH31gdJE2zqp6ra4yPiEwsjCxoUX98O8eOsNNRx/6/wuWf41rld7Hq/Cn6IvnxhT8+uzlw+3+1bBQ==",
+    "secondaryIoTHub": "pTqQzBok6fN8o0hWhoP66v04exgDR/ygZd5o/UAKdC8E1RTd9U/CDXGvq8u42Dofp4XljJyAY+XjQQ9NH+c5Pg=="
+}

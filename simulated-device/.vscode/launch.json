@@ -10,8 +10,7 @@
             "name": "Launch Program",
             "program": "${workspaceFolder}/index.js",
             "args": [
-                "--registrationid", "manualdevice",
-                "--symmetrickey", "fUujk4RBEFIFwFPLfcF5OAvbjki85AUZQcf4ZJ4Z7ElyVdjNe/ZAPNaG6mQDFHV+H7hkLAHUugLi2CQvypgpdg=="
+                "--registrationid", "manualdevice"
             ]
         }
     ]
