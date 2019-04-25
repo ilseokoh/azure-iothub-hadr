@@ -40,9 +40,11 @@ class ConnectionStringFileManager {
 
     delete() {
         return new Promise((resolve, reject) => { 
-            fs.unlinkSync(this._filename);
+            if (fs.exists(this._filename)) {
+                fs.unlinkSync(this._filename);
+            }
         })
     }
-}
+}   
 
 module.exports = ConnectionStringFileManager;

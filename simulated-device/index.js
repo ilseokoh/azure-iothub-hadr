@@ -5,6 +5,7 @@ var Client = require('azure-iot-device').Client;
 var Message = require('azure-iot-device').Message;
 var axios = require('axios');
 var NoRetry = require('azure-iot-common').NoRetry;
+var sleep = require('system-sleep');
 
 var DeviceProvision = require('./provision');
 var ConnectionStringFileManager = require('./config-manager');
@@ -62,13 +63,13 @@ function onReprovision(request, response) {
   connectionStringInfo.delete();
 
   // Device Provision 2nd
-  provision = new DeviceProvision(registrationId, config.secondaryIoTHub, idScope);
+  provision = new DeviceProvision(registrationId, config.mainIoTHub, idScope);
 
   // Reprovision
   registerDevice();
 
   // complete the response
-  response.send(200, 'reprovision', function (err) {
+  response.send(200, `reprovision to ${config.mainIoTHub}`, function (err) {
     if (!!err) {
       console.error('An error ocurred when sending a method response:\n' +
         err.toString());
@@ -104,15 +105,35 @@ function getIoTHubStatus() {
         provision = new DeviceProvision(registrationId, config.secondaryIoTHub, idScope);
         registerDevice();
       }
+      else 
+      {
+        sleep(5000); // 5 seconds
+        getIoTHubStatus();
+      }
     })
     .catch(error => {
       console.log(error);
     });
 }
 
+function startSendMessage() {
+  sendHeartbeatInterval = setInterval(function () {
+    cnt += 1;
+    var data = {
+      'hubHostname': hubHostname,
+      'count': cnt
+    };
+    var payload = JSON.stringify(data);
+    var message = new Message(payload);
+    hubClient.sendEvent(message);
+  }, 3000);
+}
+
 var connectCallback = function (err) {
   if (err) {
     console.error(`Could not connect ${err.message}`);
+
+    // 끝나버림 
   } else {
     console.log('Client connected');
     hubClient.onDeviceMethod('reprovision', onReprovision);
@@ -125,60 +146,16 @@ var connectCallback = function (err) {
       // call backup channel to get current situation. 
       getIoTHubStatus();
 
-      // start device again
-      deviceStart();
-
     });
 
     hubClient.on('connect', () => {
       console.log('client is connectted');
 
       cnt = 0;
-
-      sendHeartbeatInterval = setInterval(function () {
-        cnt += 1;
-        var data = {
-          'hubHostname': hubHostname,
-          'count': cnt
-        };
-        var payload = JSON.stringify(data);
-        var message = new Message(payload);
-        hubClient.sendEvent(message);
-      }, 3000);
-
+      startSendMessage();
     });
 
-    sendHeartbeatInterval = setInterval(function () {
-      cnt += 1;
-      var data = {
-        'hubHostname': hubHostname,
-        'count': cnt
-      };
-      var payload = JSON.stringify(data);
-      var message = new Message(payload);
-      hubClient.sendEvent(message);
-    }, 3000);
-
-    hubClient.on('error', () => {
-      console.log('error');
-    });
-    
-  }
-}
-
-function twinCallback(err, twin) {
-  if (err) {
-    console.error('could not get twin');
-  } else {
-    console.log('twin created');
-    var reportedProperties = {
-      "hubHostName": hubHostname
-    }
-
-    twin.properties.reported.update(reportedProperties, function (error) {
-      if (error) { console.error('twin reported error') }
-      console.log('twin reported.')
-    });
+    startSendMessage();
   }
 }
 
@@ -188,8 +165,6 @@ function deviceStart() {
   hubClient = Client.fromConnectionString(connectionString, Protocol);
   hubClient.setRetryPolicy(new NoRetry());
   hubClient.open(connectCallback);
-
-  hubClient.getTwin(twinCallback);
 }
 
 // Read connection string from file first. 

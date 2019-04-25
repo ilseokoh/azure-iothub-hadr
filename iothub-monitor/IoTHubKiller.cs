@@ -64,32 +64,7 @@ namespace iothub_monitor
 
                 TableResult updateResult = await iothealthTable.ExecuteAsync(updateOperation);
 
-                //if (updateResult.HttpStatusCode == 200 || updateResult.HttpStatusCode == 204)
-                //{
-                //    RegistryManager registryManager = RegistryManager.CreateFromConnectionString(config.GetConnectionString("IoTHubConnectionString"));
-
-                //    var query = registryManager.CreateQuery("select * from devices");
-
-                //    while (query.HasMoreResults)
-                //    {
-                //        IEnumerable<Twin> twins = await query.GetNextAsTwinAsync().ConfigureAwait(false);
-
-                //        var devs = new List<Device>();
-                //        foreach (var twin in twins)
-                //        {
-                //            var dev = new Device(twin.DeviceId);
-                //            dev.ETag = twin.ETag;
-                //            devs.Add(dev);
-                //        }
-
-                //        var removeResult = await registryManager.RemoveDevices2Async(devs);
-                //    }
-                //    return new OkObjectResult(JsonConvert.SerializeObject(result));
-                //}
-                //else
-                //{
-                //    return new BadRequestObjectResult("fail to update the status");
-                //}
+                
                 return new OkObjectResult(JsonConvert.SerializeObject(result));
             }
             else

@@ -4,3 +4,6 @@ HA/DR test for multiple IoT Hub
 # docker build 
 - $ docker build .
 - $ 
+
+# kill all node process 
+$ pkill node
