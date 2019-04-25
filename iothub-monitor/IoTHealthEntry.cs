@@ -16,7 +16,5 @@ namespace iothub_monitor
         public IoTHealthEntry() { }
 
         public  bool healthy { get; set; }
-
-        public bool reprovision { get; set; }
     }
 }

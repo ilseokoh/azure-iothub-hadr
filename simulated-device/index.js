@@ -22,7 +22,7 @@ var argv = require('yargs')
   .argv;
 
 var registrationId = argv.registrationid;
-var idScope = config.idScope; 
+var idScope = config.idScope;
 var connectionString = '';
 var cnt = 0;
 var hubClient = null;
@@ -44,8 +44,7 @@ function registerDevice() {
     console.log(`connectionString: ${result}`);
     connectionString = result;
 
-  deviceStart();
-
+    deviceStart();
 
     // save connection string to file 
     connectionStringInfo.save(result).then((saveresult) => {
@@ -61,7 +60,7 @@ function registerDevice() {
 function onReprovision(request, response) {
   // delete config file first 
   connectionStringInfo.delete();
-  
+
   // Device Provision 2nd
   provision = new DeviceProvision(registrationId, config.secondaryIoTHub, idScope);
 
@@ -69,49 +68,46 @@ function onReprovision(request, response) {
   registerDevice();
 
   // complete the response
-  response.send(200, 'reprovision', function(err) {
-      if(!!err) {
-          console.error('An error ocurred when sending a method response:\n' +
-              err.toString());
-      } else {
-          console.log('Response to method \'' + request.methodName +
-              '\' sent successfully.' );
-      }
+  response.send(200, 'reprovision', function (err) {
+    if (!!err) {
+      console.error('An error ocurred when sending a method response:\n' +
+        err.toString());
+    } else {
+      console.log('Response to method \'' + request.methodName +
+        '\' sent successfully.');
+    }
   });
 }
 
-function getHubHostname(connstr) { 
+function getHubHostname(connstr) {
   var arr = connstr.split(';');
   var hostname = arr.filter(str => str.startsWith('HostName='))[0];
   var name = hostname.split('=')[1];
   return name;
 }
 
-function getIoTHubStatus() { 
+function getIoTHubStatus() {
   axios.get(config.checkIoTHealthUrl)
-  .then(response => {
-    var healthy = response.data.healthy;
-    var reprovision = response.data.reprovision;
+    .then(response => {
+      var healthy = response.data.healthy;
 
-    console.log(`healthy: ${healthy}`);
-    console.log(`provision: ${provision}`);
+      console.log(`healthy: ${healthy}`);
 
-    if (healthy == false || reprovision == true) { 
+      if (healthy == false) {
 
-      // delete config file first 
-      connectionStringInfo.delete();
+        // delete config file first 
+        connectionStringInfo.delete();
 
-      // time to reprovision
-      // Device Provision 2nd
-      provision = new DeviceProvision(registrationId, config.secondaryIoTHub, idScope);
-      registerDevice();
-      // start device again
-      deviceStart();
-    }
-  })
-  .catch(error => {
-    console.log(error);
-  });
+        // time to reprovision
+        // Device Provision 2nd
+        console.log(`Reprovision now`);
+        provision = new DeviceProvision(registrationId, config.secondaryIoTHub, idScope);
+        registerDevice();
+      }
+    })
+    .catch(error => {
+      console.log(error);
+    });
 }
 
 var connectCallback = function (err) {
@@ -128,15 +124,28 @@ var connectCallback = function (err) {
 
       // call backup channel to get current situation. 
       getIoTHubStatus();
-      
+
+      // start device again
+      deviceStart();
+
     });
 
     hubClient.on('connect', () => {
       console.log('client is connectted');
-    });
 
-    hubClient.on('error', () => {
-      console.log('error');
+      cnt = 0;
+
+      sendHeartbeatInterval = setInterval(function () {
+        cnt += 1;
+        var data = {
+          'hubHostname': hubHostname,
+          'count': cnt
+        };
+        var payload = JSON.stringify(data);
+        var message = new Message(payload);
+        hubClient.sendEvent(message);
+      }, 3000);
+
     });
 
     sendHeartbeatInterval = setInterval(function () {
@@ -149,20 +158,25 @@ var connectCallback = function (err) {
       var message = new Message(payload);
       hubClient.sendEvent(message);
     }, 3000);
+
+    hubClient.on('error', () => {
+      console.log('error');
+    });
+    
   }
 }
 
-function twinCallback(err, twin) { 
-  if (err) { 
+function twinCallback(err, twin) {
+  if (err) {
     console.error('could not get twin');
-  } else { 
-    console.log('twin created'); 
-    var reportedProperties = { 
+  } else {
+    console.log('twin created');
+    var reportedProperties = {
       "hubHostName": hubHostname
     }
-    
-    twin.properties.reported.update(reportedProperties, function(error) {
-      if (error) { console.error('twin reported error')}
+
+    twin.properties.reported.update(reportedProperties, function (error) {
+      if (error) { console.error('twin reported error') }
       console.log('twin reported.')
     });
   }
@@ -183,7 +197,7 @@ connectionStringInfo.read().then((data) => {
   console.log(`read connection string successfully.`);
   connectionString = data;
   deviceStart();
-  
+
 }, (err) => {
   console.log(`can't find connection string. start provisioning`);
   registerDevice();

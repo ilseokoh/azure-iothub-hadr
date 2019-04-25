@@ -52,8 +52,7 @@ namespace iothub_monitor
                 var result = (IoTHealthEntry)retrievedResult.Result;
                 var response = new IoTHealthResponse
                 {
-                    healthy = result.healthy,
-                    reprovision = result.reprovision
+                    healthy = result.healthy
                 };
 
                 return new OkObjectResult(JsonConvert.SerializeObject(response));

@@ -8,6 +8,10 @@
   },
   "author": "",
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ilseokoh/azure-iothub-hadr"
+  },
   "dependencies": {
     "axios": "^0.18.0",
     "azure-iot-device": "1.9.3",
