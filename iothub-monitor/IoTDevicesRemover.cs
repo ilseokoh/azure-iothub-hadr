@@ -29,15 +29,16 @@ namespace iothub_monitor
 
             RegistryManager registryManager = RegistryManager.CreateFromConnectionString(config.GetConnectionString("IoTHubConnectionString"));
 
-            var query = registryManager.CreateQuery("SELECT * FROM devices WHERE status = 'enabled'", 100);
+            var query = registryManager.CreateQuery("SELECT * FROM devices WHERE status = 'enabled'", 50);
 
             //var dev = new Device("123") { Status = DeviceStatus.Disabled };
 
-            var devs = new List<Device>();
             var count = 0;
 
             while (query.HasMoreResults)
             {
+                var devs = new List<Device>();
+
                 IEnumerable<Twin> twins = await query.GetNextAsTwinAsync().ConfigureAwait(false);
 
                 foreach (var twin in twins)
@@ -49,9 +50,10 @@ namespace iothub_monitor
                 }
 
                 count += devs.Count;
+
+                if (devs.Count > 0) await registryManager.UpdateDevices2Async(devs).ConfigureAwait(false);
             }
 
-            await registryManager.UpdateDevices2Async(devs).ConfigureAwait(false);
             return new OkObjectResult(count);
         }
     }

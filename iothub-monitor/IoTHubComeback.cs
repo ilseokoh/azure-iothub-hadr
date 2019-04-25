@@ -29,13 +29,14 @@ namespace iothub_monitor
 
             RegistryManager registryManager = RegistryManager.CreateFromConnectionString(config.GetConnectionString("IoTHubConnectionString"));
 
-            var query = registryManager.CreateQuery("SELECT * FROM devices ", 100);
+            var query = registryManager.CreateQuery("SELECT * FROM devices ", 50);
 
-            var devs = new List<Device>();
             var count = 0;
 
             while (query.HasMoreResults)
             {
+                var devs = new List<Device>();
+
                 IEnumerable<Twin> twins = await query.GetNextAsTwinAsync().ConfigureAwait(false);
 
                 foreach (var twin in twins)
@@ -47,21 +48,23 @@ namespace iothub_monitor
                 }
 
                 count += devs.Count;
-            }
 
-            if (count > 0) await registryManager.RemoveDevices2Async(devs);
+                if (devs.Count > 0) await registryManager.RemoveDevices2Async(devs);
+            }
 
             //--------------------
 
             RegistryManager registryManager_south = RegistryManager.CreateFromConnectionString(config.GetConnectionString("IoTHubConnectionString_south"));
 
-            var devs_south = new List<Device>();
+            
             count = 0;
 
-            var query_south = registryManager_south.CreateQuery("SELECT * FROM devices ", 100);
+            var query_south = registryManager_south.CreateQuery("SELECT * FROM devices ", 50);
 
             while (query_south.HasMoreResults)
             {
+                var devs_south = new List<Device>();
+
                 IEnumerable<Twin> twins_south = await query_south.GetNextAsTwinAsync().ConfigureAwait(false);
 
                 foreach (var twin in twins_south)
@@ -73,9 +76,9 @@ namespace iothub_monitor
                 }
 
                 count += devs_south.Count;
-            }
 
-            if (count > 0)   await registryManager_south.RemoveDevices2Async(devs_south);
+                if (devs_south.Count > 0) await registryManager_south.RemoveDevices2Async(devs_south);
+            }
 
             return new OkObjectResult(count);
         }
