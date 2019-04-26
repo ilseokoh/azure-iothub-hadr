@@ -1,9 +1,7 @@
-# azure-iothub-hadr
-HA/DR test for multiple IoT Hub
+## Azure IoT Hub HA sample with multiple IoT Hub
 
-# docker build 
-- $ docker build .
-- $ 
+## Diagram
+![Diagram](docs/iothub-ha-diagram.png)
 
-# kill all node process 
-$ pkill node
+## Power BI real-time stream
+![Power BI capture](docs/powerbi-realtime-stream.png)
