@@ -26,11 +26,9 @@ namespace iothub_monitor
 
             RegistryManager registryManager = RegistryManager.CreateFromConnectionString(config.GetConnectionString("IoTHubConnectionString"));
 
-            //// Method 2: using Device Registry
-            //RegistryStatistics stats = await registryManager.GetRegistryStatisticsAsync();
-            //long count = stats.TotalDeviceCount;
+            RegistryStatistics stats = await registryManager.GetRegistryStatisticsAsync();
+            long krcentralTotal = stats.TotalDeviceCount;
 
-            // Method 1: using Device Twin
             string queryString = "SELECT COUNT() AS numberOfConnectedDevices FROM devices WHERE connectionState = 'Connected'";
             IQuery query = registryManager.CreateQuery(queryString, 1);
             string json = (await query.GetNextAsJsonAsync()).FirstOrDefault();
@@ -45,6 +43,9 @@ namespace iothub_monitor
             //-----------------
 
             RegistryManager registryManager_south = RegistryManager.CreateFromConnectionString(config.GetConnectionString("IoTHubConnectionString_south"));
+
+            RegistryStatistics stats_south = await registryManager_south.GetRegistryStatisticsAsync();
+            long krsouthTotal = stats_south.TotalDeviceCount;
 
             IQuery query_south = registryManager_south.CreateQuery(queryString, 1);
             string json_south = (await query_south.GetNextAsJsonAsync()).FirstOrDefault();
@@ -61,7 +62,9 @@ namespace iothub_monitor
             {
                 krcentral = centralCount,
                 krsouth = southCount,
-                timestamp = DateTime.Now.ToUniversalTime()
+                timestamp = DateTime.Now.ToUniversalTime(),
+                krsouthTotal = krsouthTotal,
+                krcentralTotal = krcentralTotal
             };
 
             var jsonResult = JsonConvert.SerializeObject(result);

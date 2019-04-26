@@ -9,5 +9,7 @@ namespace iothub_monitor
         public long krcentral { get; set; }
         public long krsouth { get; set; }
         public DateTime timestamp { get; set; }
+        public long krcentralTotal { get; set; }
+        public long krsouthTotal { get; set; }
     }
 }
