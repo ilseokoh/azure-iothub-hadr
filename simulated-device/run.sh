@@ -5,5 +5,5 @@ do
     devid=krcentral-dev-$i
     echo ${devid}
     node index.js --registrationid ${devid} &
-    sleep 5
+    sleep 3
 done
